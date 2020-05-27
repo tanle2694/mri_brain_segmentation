@@ -6,7 +6,7 @@ from torchvision.utils import make_grid
 from utils.util import MetricTracker
 from logger.visualization import TensorboardWriter
 import time
-
+import numpy as np
 
 class Trainer():
     def __init__(self, model, criterion, metrics_name, optimizer, train_loader, logger, log_dir, nb_epochs, save_dir,
@@ -134,11 +134,12 @@ class Trainer():
 
                 self.writer.set_step((epoch - 1) * len(self.valid_loader) + batch_idx, 'valid')
                 self.valid_metrics.update('loss', loss.item())
-                for met_name in self.metrics_name:
-                    self.valid_metrics.update(met_name, getattr(metrics, met_name)(output, target), n=len(target))
                 self.writer.add_image('input', make_grid(data.cpu(), nrow=8, normalize=True))
+                output = output.data.cpu().numpy()
+                target = target.cpu().numpy()
+                pred = np.argmax(output, axis=1)
                 for i in range(len(target)):
-                    miou_tracker.add_batch(target[i], output[i])
+                    miou_tracker.add_batch(pred[i], output[i])
         self.writer.add_scalar('miou', miou_tracker.get_miou())
         self.writer.add_scalar('loss', self.valid_metrics.avg('loss'))
         for met_name in self.metrics_name:

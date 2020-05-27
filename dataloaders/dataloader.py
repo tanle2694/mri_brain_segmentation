@@ -4,6 +4,7 @@ from PIL import Image
 from pathlib import Path
 from dataloaders.utils import Normalize, ToTensor, RandomHorizontalFlip, RandomRotate
 import cv2
+import numpy as np
 
 class MRIBrainSegmentation(data.Dataset):
     def __init__(self, root_folder, image_label, is_train=True):
