@@ -47,7 +47,8 @@ def main(args):
 
     criterion = getattr(loss, 'cross_entropy')
     optimizer = optim.SGD(model.parameters(), lr=cfg["lr"], momentum=0.9, weight_decay=cfg["weight_decay"])
-    metrics_name = ["accuracy"]
+    metrics_name = []
+
     trainer = Trainer(model=model, criterion=criterion, optimizer=optimizer, train_loader=train_loader, nb_epochs=config['epoch'],
                       valid_loader=vali_loader, logger=logger, log_dir=config.save_dir, metrics_name=metrics_name,
                       resume=config['resume'], save_dir=config.save_dir, device="cuda:1")
@@ -55,21 +56,21 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--train_data", default="/home/tanlm/Downloads/covid_data/kfold/1/train.txt")
-    parser.add_argument("--validation_data", default="/home/tanlm/Downloads/covid_data/kfold/1/val.txt")
-    parser.add_argument("--root_folder", default="/home/tanlm/Downloads/covid_data/data")
+    parser.add_argument("--train_data", default="/home/tanlm/Downloads/lgg-mri-segmentation/train.txt")
+    parser.add_argument("--validation_data", default="/home/tanlm/Downloads/lgg-mri-segmentation/vali.txt")
+    parser.add_argument("--root_folder", default="/home/tanlm/Downloads/lgg-mri-segmentation/kaggle_3m")
     parser.add_argument('--backbone', type=str, default='resnet',
                         choices=['resnet', 'xception', 'drn', 'mobilenet'],
                         help='backbone name (default: resnet)')
-    parser.add_argument('--out_stride', type=int, default=16,
+    parser.add_argument('--output_stride', type=int, default=16,
                         help='network output stride (default: 8)')
     parser.add_argument('--sync_bn', type=bool, default=None,
                         help='whether to use sync bn (default: auto)')
     parser.add_argument('--freeze_bn', type=bool, default=False,
                         help='whether to freeze bn parameters (default: False)')
     parser.add_argument("--input_size", default=256)
-    parser.add_argument("--train_batch_size", default=32)
-    parser.add_argument("--vali_batch_size", default=32)
+    parser.add_argument("--train_batch_size", default=10)
+    parser.add_argument("--vali_batch_size", default=2)
     parser.add_argument("--nclass", default=2)
     parser.add_argument("--seed", default=1)
     parser.add_argument("--workers", default=4)
@@ -78,7 +79,7 @@ if __name__ == "__main__":
     parser.add_argument("--max_iters", default=1000)
     parser.add_argument("--epoch", default=100)
     parser.add_argument("--resume", default="")
-    parser.add_argument("--trainer_save_dir", default="/home/tanlm/Downloads/covid_data/save_dir")
-    parser.add_argument("--exper_name", default="fold_1")
+    parser.add_argument("--trainer_save_dir", default="/home/tanlm/Downloads/lgg-mri-segmentation/save_dir")
+    parser.add_argument("--exper_name", default="exp1")
     args = parser.parse_args()
     main(args)

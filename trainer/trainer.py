@@ -5,11 +5,13 @@ from numpy import inf
 from torchvision.utils import make_grid
 from utils.util import MetricTracker
 from logger.visualization import TensorboardWriter
+import time
+
 
 class Trainer():
     def __init__(self, model, criterion, metrics_name, optimizer, train_loader, logger, log_dir, nb_epochs, save_dir,
                  device="cuda:0", log_step=10, start_epoch=0, enable_tensorboard=True, valid_loader=None, lr_scheduler=None,
-                 monitor="max val_accuracy", early_stop=10, save_epoch_period=1, resume=""):
+                 monitor="max miou", early_stop=10, save_epoch_period=1, resume=""):
         self.model = model
         self.criterion = criterion
         self.metrics_name = metrics_name
@@ -46,6 +48,7 @@ class Trainer():
 
     def train(self):
         not_improved_count = 0
+
         for epoch in range(self.start_epoch, self.epochs + 1):
             result = self._train_epoch(epoch)
             log = {'epoch': epoch}
@@ -81,8 +84,10 @@ class Trainer():
     def _train_epoch(self, epoch):
         self.model.train()
         self.train_metrics.reset()
-
-        for batch_idx, (data, target) in enumerate(self.train_loader):
+        start_time = time.time()
+        for batch_idx, sample in enumerate(self.train_loader):
+            data = sample['image']
+            target = sample['mask']
             data, target = data.to(self.device), target.to(self.device)
 
             self.optimizer.zero_grad()
@@ -96,8 +101,10 @@ class Trainer():
             for met_name in self.metrics_name:
                 self.train_metrics.update(met_name, getattr(metrics, met_name)(output, target))
             if batch_idx % self.log_step == 0:
-                self.logger.debug('Train Epoch: {} {} Loss: {:.6f}'.format(epoch, self._progress(batch_idx),
-                                                                           loss.item()))
+                time_to_run = time.time() - start_time
+                speed = self.log_step / time_to_run
+                self.logger.debug('Train Epoch: {} {} Loss: {:.6f}  Speed: {:.4f}iters/s'.format(epoch, self._progress(batch_idx),
+                                                                           loss.item(), speed))
                 for met_name in self.metrics_name:
                     self.writer.add_scalar(met_name, self.train_metrics.avg(met_name))
                 self.writer.add_scalar('loss', self.train_metrics.avg('loss'))
@@ -105,8 +112,9 @@ class Trainer():
             assert batch_idx <= self.len_epoch
         log = self.train_metrics.result()
         if self.do_validation:
-            val_log = self._valid_epoch(epoch)
+            val_log, miou = self._valid_epoch(epoch)
             log.update(**{'val_' + k: v for k, v in val_log.items()})
+            log.update({'miou': miou})
         if self.lr_scheduler is not None:
             self.lr_scheduler.step()
         return log
@@ -114,8 +122,11 @@ class Trainer():
     def _valid_epoch(self, epoch):
         self.model.eval()
         self.valid_metrics.reset()
+        miou_tracker = metrics.MIoU(2)
         with torch.no_grad():
-            for batch_idx, (data, target) in enumerate(self.valid_loader):
+            for batch_idx, sample in enumerate(self.valid_loader):
+                data = sample['image']
+                target = sample['mask']
                 data, target = data.to(self.device), target.to(self.device)
 
                 output = self.model(data)
@@ -126,13 +137,15 @@ class Trainer():
                 for met_name in self.metrics_name:
                     self.valid_metrics.update(met_name, getattr(metrics, met_name)(output, target), n=len(target))
                 self.writer.add_image('input', make_grid(data.cpu(), nrow=8, normalize=True))
-
+                for i in range(len(target)):
+                    miou_tracker.add_batch(target[i], output[i])
+        self.writer.add_scalar('miou', miou_tracker.get_miou())
         self.writer.add_scalar('loss', self.valid_metrics.avg('loss'))
         for met_name in self.metrics_name:
             self.writer.add_scalar(met_name, self.valid_metrics.avg(met_name))
         for name, p in self.model.named_parameters():
             self.writer.add_histogram(name, p, bins='auto')
-        return self.valid_metrics.result()
+        return self.valid_metrics.result(), miou_tracker.get_miou()
 
 
     def _progress(self, batch_idx):
