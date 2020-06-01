@@ -5,7 +5,11 @@ import torch
 import numpy as np
 import torch.nn as nn
 from torchvision import datasets, models, transforms
-from dataloaders.dataloader import CTImageLoaderTest
+from dataloaders.dataloader import MRIBrainSegmentation
+import cv2
+import os
+from modeling.deeplab import DeepLab
+
 SEED = 123
 torch.manual_seed(SEED)
 torch.backends.cudnn.deterministic = True
@@ -13,56 +17,60 @@ torch.backends.cudnn.benchmark = False
 np.random.seed(SEED)
 
 def main(args):
-
-    validation_transform = transforms.Compose(
-        [transforms.ToTensor(),
-         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
-    )
-
-    validation_dataset = CTImageLoaderTest(link_label_file=args.validation_data, image_size=args.input_size,
-                                       root_folder=args.root_folder, transforms=validation_transform)
-
-    vali_loader = torch.utils.data.DataLoader(validation_dataset, batch_size=args.vali_batch_size, shuffle=False,
-                                              num_workers=args.workers, drop_last=False)
+    vali_dataset = MRIBrainSegmentation(root_folder="/home/tanlm/Downloads/lgg-mri-segmentation/kaggle_3m",
+                                        image_label="/home/tanlm/Downloads/lgg-mri-segmentation/train.txt",
+                                        is_train=False)
+    vali_loader = torch.utils.data.DataLoader(vali_dataset, batch_size=16, shuffle=False,
+                                              num_workers=4, drop_last=False)
 
     # Init and load model
-    model = models.resnet50(pretrained=False)
-    num_ftrs = model.fc.in_features
-    model.fc = nn.Linear(num_ftrs, 3)
-    checkpoint = torch.load(args.resume)
+    model = DeepLab(num_classes=2,
+                    backbone='resnet',
+                    output_stride=16,
+                    sync_bn=None,
+                    freeze_bn=False)
+
+    checkpoint = torch.load("/home/tanlm/Downloads/lgg-mri-segmentation/save_dir/models/exp1/0601_110033/model_best.pth")
     state_dict = checkpoint['state_dict']
     model.load_state_dict(state_dict)
     device = torch.device(args.device if torch.cuda.is_available() else 'cpu')
     model = model.to(device)
     model.eval()
 
-    n_correct = 0
-    n_total = 0
-    f_write = open(args.predict_result, 'w')
     with torch.no_grad():
-        for i, (data, target, links) in enumerate(vali_loader):
+        for i, sample in enumerate(vali_loader):
+            print(i)
+            data = sample['image']
+            target = sample['mask']
             data, target = data.to(device), target.to(device)
             output = model(data)
-            _, pred = torch.max(output, dim=1)
-            for j in range(len(links)):
-                f_write.write("{}\t{}\t{}\n".format(links[j], target[j].item(), pred[j].item()))
-                if pred[j].item() == target[j].item():
-                    n_correct += 1
-                n_total += 1
-    f_write.close()
-    print("Acc: ", n_correct / n_total)
-
+            output = output.data.cpu().numpy()
+            target = target.data.cpu().numpy()
+            data = data.data.cpu().numpy()
+            pred = np.argmax(output, axis=1)
+            for j in range(len(target)):
+                output_image = pred[j] * 255
+                target_image = target[j] * 255
+                cv2.imwrite("/home/tanlm/Downloads/lgg-mri-segmentation/save_dir/output_image/{:06d}_{:06d}_predict.png".format(i, j), output_image.astype(np.uint8))
+                cv2.imwrite("/home/tanlm/Downloads/lgg-mri-segmentation/save_dir/output_image/{:06d}_{:06d}_target.png".format(i, j), target_image.astype(np.uint8))
+                img = data[j].transpose([1, 2, 0])
+                img *= (0.229, 0.224, 0.225)
+                img += (0.485, 0.456, 0.406)
+                img *= 255.0
+                cv2.imwrite(
+                    "/home/tanlm/Downloads/lgg-mri-segmentation/save_dir/output_image/{:06d}_{:06d}_origin.png".format(
+                        i, j), img.astype(np.uint8))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--validation_data", default="data/vali.txt")
     parser.add_argument("--root_folder", default="data")
     parser.add_argument("--input_size", default=256)
-    parser.add_argument("--vali_batch_size", default=32)
+    parser.add_argument("--vali_batch_size", default=16)
     parser.add_argument("--seed", default=1)
     parser.add_argument("--workers", default=4)
-    parser.add_argument("--resume", required=True)
-    parser.add_argument("--device", default="cuda:0")
+    parser.add_argument("--resume")
+    parser.add_argument("--device", default="cuda:1")
     parser.add_argument("--predict_result", default="data/result.txt")
     args = parser.parse_args()
     main(args)
