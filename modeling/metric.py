@@ -1,16 +1,21 @@
 import torch
 import numpy as np
 
-class MIoU(object):
+
+class IoU(object):
+
     def __init__(self, num_class):
         self.num_class = num_class
         self.confusion_matrix = np.zeros((self.num_class, )*2)
 
-    def get_miou(self):
-        IoU = np.diag(self.confusion_matrix) / (np.sum(self.confusion_matrix, axis=1) +
+    def get_iou(self):
+        IoU_value = np.diag(self.confusion_matrix) / (np.sum(self.confusion_matrix, axis=1) +
                                                  np.sum(self.confusion_matrix, axis=0)- np.diag(self.confusion_matrix))
-        mIoU = np.nanmean(IoU)
-        return mIoU
+        # mIoU = np.nanmean(IoU)
+        iou_class = {}
+        for i in range(IoU_value.shape[0]):
+            iou_class["iou_class_{}".format(i)] = IoU_value[i]
+        return iou_class
 
     def _generate_matrix(self, gt_image, pre_image):
         mask = (gt_image >= 0) & (gt_image < self.num_class)
@@ -25,4 +30,5 @@ class MIoU(object):
 
     def reset(self):
         self.confusion_matrix = np.zeros((self.num_class,) * 2)
+
 

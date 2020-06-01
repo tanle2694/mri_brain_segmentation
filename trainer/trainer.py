@@ -85,44 +85,47 @@ class Trainer():
         self.model.train()
         self.train_metrics.reset()
         start_time = time.time()
+
         for batch_idx, sample in enumerate(self.train_loader):
             data = sample['image']
             target = sample['mask']
             data, target = data.to(self.device), target.to(self.device)
-
+            current_lr = self.lr_scheduler(self.optimizer, batch_idx, epoch)
             self.optimizer.zero_grad()
             output = self.model(data)
             loss = self.criterion(output, target)
             loss.backward()
             self.optimizer.step()
-
             self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
             self.train_metrics.update('loss', loss.item())
             for met_name in self.metrics_name:
                 self.train_metrics.update(met_name, getattr(metrics, met_name)(output, target))
             if batch_idx % self.log_step == 0:
                 time_to_run = time.time() - start_time
+                start_time = time.time()
                 speed = self.log_step / time_to_run
-                self.logger.debug('Train Epoch: {} {} Loss: {:.6f}  Speed: {:.4f}iters/s'.format(epoch, self._progress(batch_idx),
-                                                                           loss.item(), speed))
+                self.logger.debug('Train Epoch: {} {} Loss: {:.6f} LR: {:.6f}  Speed: {:.4f}iters/s' \
+                                  .format(epoch, self._progress(batch_idx), loss.item(), current_lr, speed))
                 for met_name in self.metrics_name:
                     self.writer.add_scalar(met_name, self.train_metrics.avg(met_name))
                 self.writer.add_scalar('loss', self.train_metrics.avg('loss'))
+                self.writer.add_scalar("lr", current_lr)
                 self.writer.add_image('input', make_grid(data.cpu(), nrow=8, normalize=True))
             assert batch_idx <= self.len_epoch
         log = self.train_metrics.result()
         if self.do_validation:
-            val_log, miou = self._valid_epoch(epoch)
+            print("Start validation")
+            val_log, iou_classes = self._valid_epoch(epoch)
+
             log.update(**{'val_' + k: v for k, v in val_log.items()})
-            log.update({'miou': miou})
-        if self.lr_scheduler is not None:
-            self.lr_scheduler.step()
+            for key, value in iou_classes.items():
+                log.update({key: value})
         return log
 
     def _valid_epoch(self, epoch):
         self.model.eval()
         self.valid_metrics.reset()
-        miou_tracker = metrics.MIoU(2)
+        iou_tracker = metrics.IoU(2)
         with torch.no_grad():
             for batch_idx, sample in enumerate(self.valid_loader):
                 data = sample['image']
@@ -139,14 +142,20 @@ class Trainer():
                 target = target.cpu().numpy()
                 pred = np.argmax(output, axis=1)
                 for i in range(len(target)):
-                    miou_tracker.add_batch(pred[i], output[i])
-        self.writer.add_scalar('miou', miou_tracker.get_miou())
+                    iou_tracker.add_batch(target[i], pred[i])
+        iou_classes = iou_tracker.get_iou()
+        for key, value in iou_classes.items():
+            self.writer.add_scalar(key, value)
         self.writer.add_scalar('loss', self.valid_metrics.avg('loss'))
+
         for met_name in self.metrics_name:
             self.writer.add_scalar(met_name, self.valid_metrics.avg(met_name))
-        for name, p in self.model.named_parameters():
-            self.writer.add_histogram(name, p, bins='auto')
-        return self.valid_metrics.result(), miou_tracker.get_miou()
+
+        # for name, p in self.model.named_parameters():
+        #     print(name, p)
+        #     self.writer.add_histogram(name, p.cpu().data.numpy(), bins='auto')
+        #
+        return self.valid_metrics.result(), iou_classes
 
 
     def _progress(self, batch_idx):

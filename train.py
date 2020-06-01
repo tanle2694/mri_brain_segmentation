@@ -14,6 +14,7 @@ from modeling.deeplab import DeepLab
 from utils.configure_parse import ConfigParser
 import modeling.loss as loss
 from trainer.trainer import Trainer
+from modeling.lr_scheduler import Poly_Scheduler
 from torchvision import datasets, models, transforms
 
 
@@ -48,10 +49,11 @@ def main(args):
     criterion = getattr(loss, 'cross_entropy')
     optimizer = optim.SGD(model.parameters(), lr=cfg["lr"], momentum=0.9, weight_decay=cfg["weight_decay"])
     metrics_name = []
-
-    trainer = Trainer(model=model, criterion=criterion, optimizer=optimizer, train_loader=train_loader, nb_epochs=config['epoch'],
-                      valid_loader=vali_loader, logger=logger, log_dir=config.save_dir, metrics_name=metrics_name,
-                      resume=config['resume'], save_dir=config.save_dir, device="cuda:1")
+    scheduler = Poly_Scheduler(base_lr=cfg['lr'], num_epochs=config['epoch'], iters_each_epoch=len(train_loader))
+    trainer = Trainer(model=model, criterion=criterion, optimizer=optimizer, train_loader=train_loader,
+                      nb_epochs=config['epoch'], valid_loader=vali_loader, lr_scheduler=scheduler, logger=logger,
+                      log_dir=config.save_dir, metrics_name=metrics_name,resume=config['resume'],
+                      save_dir=config.save_dir, device="cuda:1", monitor="max iou_class_1")
     trainer.train()
 
 if __name__ == "__main__":
@@ -69,15 +71,15 @@ if __name__ == "__main__":
     parser.add_argument('--freeze_bn', type=bool, default=False,
                         help='whether to freeze bn parameters (default: False)')
     parser.add_argument("--input_size", default=256)
-    parser.add_argument("--train_batch_size", default=10)
-    parser.add_argument("--vali_batch_size", default=2)
+    parser.add_argument("--train_batch_size", default=16)
+    parser.add_argument("--vali_batch_size", default=32)
     parser.add_argument("--nclass", default=2)
     parser.add_argument("--seed", default=1)
-    parser.add_argument("--workers", default=4)
-    parser.add_argument("--lr", default=0.0001)
+    parser.add_argument("--workers", default=6)
+    parser.add_argument("--lr", default=0.007)
     parser.add_argument("--weight_decay", default=4e-5)
-    parser.add_argument("--max_iters", default=1000)
-    parser.add_argument("--epoch", default=100)
+    parser.add_argument("--max_iters", default=10000)
+    parser.add_argument("--epoch", default=50)
     parser.add_argument("--resume", default="")
     parser.add_argument("--trainer_save_dir", default="/home/tanlm/Downloads/lgg-mri-segmentation/save_dir")
     parser.add_argument("--exper_name", default="exp1")
