@@ -27,7 +27,8 @@ class Decoder(nn.Module):
                                        BatchNorm(256),
                                        nn.ReLU(),
                                        nn.Dropout(0.1),
-                                       nn.Conv2d(256, num_classes, kernel_size=1, stride=1))
+                                       nn.Conv2d(256, num_classes, kernel_size=1, stride=1)
+                                       )
         self._init_weight()
 
 

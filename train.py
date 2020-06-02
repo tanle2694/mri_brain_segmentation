@@ -40,20 +40,20 @@ def main(args):
     vali_loader = torch.utils.data.DataLoader(vali_dataset, batch_size=cfg["vali_batch_size"], shuffle=False,
                                               num_workers=cfg["workers"], drop_last=False)
 
-    model = DeepLab(num_classes=cfg['nclass'],
+    model = DeepLab(num_classes=1,
                     backbone=cfg['backbone'],
                     output_stride=cfg['output_stride'],
                     sync_bn=cfg['sync_bn'],
                     freeze_bn=cfg['freeze_bn'])
 
-    criterion = getattr(loss, 'cross_entropy')
+    criterion = getattr(loss, 'dice_loss')
     optimizer = optim.SGD(model.parameters(), lr=cfg["lr"], momentum=0.9, weight_decay=cfg["weight_decay"])
     metrics_name = []
     scheduler = Poly_Scheduler(base_lr=cfg['lr'], num_epochs=config['epoch'], iters_each_epoch=len(train_loader))
     trainer = Trainer(model=model, criterion=criterion, optimizer=optimizer, train_loader=train_loader,
                       nb_epochs=config['epoch'], valid_loader=vali_loader, lr_scheduler=scheduler, logger=logger,
                       log_dir=config.save_dir, metrics_name=metrics_name,resume=config['resume'],
-                      save_dir=config.save_dir, device="cuda:1", monitor="max iou_class_1")
+                      save_dir=config.save_dir, device="cuda:0", monitor="max iou_class_1")
     trainer.train()
 
 if __name__ == "__main__":

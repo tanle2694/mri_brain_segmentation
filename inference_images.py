@@ -9,6 +9,7 @@ from dataloaders.dataloader import MRIBrainSegmentation
 import cv2
 import os
 from modeling.deeplab import DeepLab
+import torch.nn.functional as F
 
 SEED = 123
 torch.manual_seed(SEED)
@@ -24,13 +25,13 @@ def main(args):
                                               num_workers=4, drop_last=False)
 
     # Init and load model
-    model = DeepLab(num_classes=2,
+    model = DeepLab(num_classes=1,
                     backbone='resnet',
-                    output_stride=16,
+                    output_stride=8,
                     sync_bn=None,
                     freeze_bn=False)
 
-    checkpoint = torch.load("/home/tanlm/Downloads/lgg-mri-segmentation/save_dir/models/exp1/0601_110033/model_best.pth")
+    checkpoint = torch.load("/home/tanlm/Downloads/lgg-mri-segmentation/save_dir/models/exp1/0602_145124/checkpoint-epoch20.pth")
     state_dict = checkpoint['state_dict']
     model.load_state_dict(state_dict)
     device = torch.device(args.device if torch.cuda.is_available() else 'cpu')
@@ -44,13 +45,19 @@ def main(args):
             target = sample['mask']
             data, target = data.to(device), target.to(device)
             output = model(data)
-            output = output.data.cpu().numpy()
+
             target = target.data.cpu().numpy()
             data = data.data.cpu().numpy()
-            pred = np.argmax(output, axis=1)
+            output = F.sigmoid(output)
+
+            output = output.data.cpu().numpy()
+            pred = np.zeros_like(output)
+            pred[output > 0.5] = 1
+            pred = pred[:, 0]
             for j in range(len(target)):
                 output_image = pred[j] * 255
                 target_image = target[j] * 255
+
                 cv2.imwrite("/home/tanlm/Downloads/lgg-mri-segmentation/save_dir/output_image/{:06d}_{:06d}_predict.png".format(i, j), output_image.astype(np.uint8))
                 cv2.imwrite("/home/tanlm/Downloads/lgg-mri-segmentation/save_dir/output_image/{:06d}_{:06d}_target.png".format(i, j), target_image.astype(np.uint8))
                 img = data[j].transpose([1, 2, 0])

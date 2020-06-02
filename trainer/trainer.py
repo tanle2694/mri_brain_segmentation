@@ -2,6 +2,7 @@ import modeling.metric as metrics
 import torch
 from numpy import inf
 
+import torch.nn.functional as F
 from torchvision.utils import make_grid
 from utils.util import MetricTracker
 from logger.visualization import TensorboardWriter
@@ -138,9 +139,12 @@ class Trainer():
                 self.writer.set_step((epoch - 1) * len(self.valid_loader) + batch_idx, 'valid')
                 self.valid_metrics.update('loss', loss.item())
                 self.writer.add_image('input', make_grid(data.cpu(), nrow=8, normalize=True))
-                output = output.data.cpu().numpy()
                 target = target.cpu().numpy()
-                pred = np.argmax(output, axis=1)
+                output = F.sigmoid(output)[:, 0]
+                output = output.data.cpu().numpy()
+                pred = np.zeros_like(output)
+                pred[output > 0.5] = 1
+                pred = pred.astype(np.int64)
                 for i in range(len(target)):
                     iou_tracker.add_batch(target[i], pred[i])
         iou_classes = iou_tracker.get_iou()
