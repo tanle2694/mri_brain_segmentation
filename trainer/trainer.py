@@ -12,7 +12,7 @@ import numpy as np
 class Trainer():
     def __init__(self, model, criterion, metrics_name, optimizer, train_loader, logger, log_dir, nb_epochs, save_dir,
                  device="cuda:0", log_step=10, start_epoch=0, enable_tensorboard=True, valid_loader=None, lr_scheduler=None,
-                 monitor="max miou", early_stop=10, save_epoch_period=1, resume=""):
+                 monitor="min val_loss", early_stop=10, save_epoch_period=1, resume=""):
         self.model = model
         self.criterion = criterion
         self.metrics_name = metrics_name
