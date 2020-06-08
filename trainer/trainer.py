@@ -132,15 +132,13 @@ class Trainer():
                 data = sample['image']
                 target = sample['mask']
                 data, target = data.to(self.device), target.to(self.device)
-
                 output = self.model(data)
                 loss = self.criterion(output, target)
-
                 self.writer.set_step((epoch - 1) * len(self.valid_loader) + batch_idx, 'valid')
                 self.valid_metrics.update('loss', loss.item())
                 self.writer.add_image('input', make_grid(data.cpu(), nrow=8, normalize=True))
                 target = target.cpu().numpy()
-                output = F.sigmoid(output)[:, 0]
+                output = output[:, 0]
                 output = output.data.cpu().numpy()
                 pred = np.zeros_like(output)
                 pred[output > 0.5] = 1
@@ -150,7 +148,7 @@ class Trainer():
         iou_classes = iou_tracker.get_iou()
         for key, value in iou_classes.items():
             self.writer.add_scalar(key, value)
-        self.writer.add_scalar('loss', self.valid_metrics.avg('loss'))
+        self.writer.add_scalar('val_loss', self.valid_metrics.avg('loss'))
 
         for met_name in self.metrics_name:
             self.writer.add_scalar(met_name, self.valid_metrics.avg(met_name))
