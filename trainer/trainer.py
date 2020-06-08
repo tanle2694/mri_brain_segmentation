@@ -8,6 +8,7 @@ from utils.util import MetricTracker
 from logger.visualization import TensorboardWriter
 import time
 import numpy as np
+import os
 
 class Trainer():
     def __init__(self, model, criterion, metrics_name, optimizer, train_loader, logger, log_dir, nb_epochs, save_dir,
@@ -183,13 +184,19 @@ class Trainer():
             'monitor_best': self.mnt_best,
             # 'config': self.config
         }
-        filename = str(self.checkpoint_dir / 'checkpoint-epoch{}.pth'.format(epoch))
+        filename = str(self.checkpoint_dir / 'checkpoint-epoch{:06d}.pth'.format(epoch))
         torch.save(state, filename)
         self.logger.info("Saving checkpoint: {} ...".format(filename))
         if save_best:
             best_path = str(self.checkpoint_dir / 'model_best.pth')
             torch.save(state, best_path)
             self.logger.info("Saving current best: model_best.pth ...")
+
+    def delete_checkpoint(self):
+        checkpoints_file = list(self.checkpoint_dir.glob("checkpoint-epoch*.pth"))
+        checkpoints_file.sort()
+        for checkpoint_file in checkpoints_file[:-5]:
+            os.remove(str(checkpoint_file.absolute()))
 
     def _resume_checkpoint(self, resume_path):
         self.logger.info("Loading checkpoint: {} ...".format(resume_path))
