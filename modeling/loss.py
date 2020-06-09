@@ -41,8 +41,7 @@ class DiceLoss(nn.Module):
         intersection = input_flat * target_flat
 
         loss = (2 * intersection.sum(dim=1) + smooth) / (input_flat.sum(dim=1) + target_flat.sum(dim=1) + smooth)
-        loss = 1 - loss.sum() / N
-
+        loss = 1 - torch.mean(loss)
         return loss
 
 def dice_loss(y_pred, y_true):
