@@ -53,7 +53,7 @@ def main(args):
     trainer = Trainer(model=model, criterion=criterion, optimizer=optimizer, train_loader=train_loader,
                       nb_epochs=config['epoch'], valid_loader=vali_loader, lr_scheduler=scheduler, logger=logger,
                       log_dir=config.save_dir, metrics_name=metrics_name,resume=config['resume'],
-                      save_dir=config.save_dir, device="cuda:0", monitor="max iou_class_1")
+                      save_dir=config.save_dir, device="cuda:0", monitor="min val_loss")
     trainer.train()
 
 if __name__ == "__main__":

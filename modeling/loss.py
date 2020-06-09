@@ -16,12 +16,7 @@ def cross_entropy(logit, target):
 
 
 def dice_loss(y_pred, y_true):
-    # y_pred = y_pred.argmax(1).type(torch.FloatTensor).cuda("cuda:1")
-    # y_pred = Variable(torch.argmax(y_pred, 1).float(), requires_grad=True).cuda("cuda:1")
-
-    # y_pred = F.sigmoid(y_pred)[:, 0].contiguous()
     y_pred = y_pred[:,0]
-    print(y_pred.size(), y_true.size())
     assert y_pred.size() == y_true.size()
     y_pred = y_pred.view(y_pred.size()[0], -1)
     y_true = y_true.view(y_true.size()[0], -1)
