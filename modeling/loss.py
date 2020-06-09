@@ -40,7 +40,7 @@ class DiceLoss(nn.Module):
 
         intersection = input_flat * target_flat
 
-        loss = 2 * (intersection.sum(1) + smooth) / (input_flat.sum(1) + target_flat.sum(1) + smooth)
+        loss = (2 * intersection.sum(dim=1) + smooth) / (input_flat.sum(dim=1) + target_flat.sum(dim=1) + smooth)
         loss = 1 - loss.sum() / N
 
         return loss
