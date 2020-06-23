@@ -2,9 +2,12 @@ import cv2
 import pathlib
 import argparse
 from random import shuffle
+import os
+
+
 parser = argparse.ArgumentParser()
-parser.add_argument("--root_dir", default="/home/tanlm/Downloads/lgg-mri-segmentation/lgg-mri-segmentation/kaggle_3m")
-parser.add_argument("--output_link", default="/home/tanlm/Downloads/lgg-mri-segmentation")
+parser.add_argument("--root_dir", default="/home/tanlm/Downloads/data/kaggle_3m")
+parser.add_argument("--output_link", default="/home/tanlm/Downloads/data/check_link")
 args = parser.parse_args()
 
 root_dir = pathlib.Path(args.root_dir)
@@ -15,12 +18,14 @@ imgs = root_dir.rglob("*.tif")
 images = []
 masks = []
 for link in imgs:
-    link = "{}/{}".format(link.parent.name, link.name)
-    if link.__contains__("mask.tif"):
-        masks.append(link)
+    if link.name.__contains__("mask.tif"):
         continue
-    images.append(link)
-
+    link_image = "{}/{}".format(link.parent.name, link.name)
+    link_mask = "{}/{}_mask.tif".format(link.parent.name, link.name.split(".")[0])
+    if not os.path.join(str(root_dir.absolute()), link_mask):
+        continue
+    masks.append(link_mask)
+    images.append(link_image)
 assert len(images) == len(masks)
 
 indexs = list(range(len(images)))
