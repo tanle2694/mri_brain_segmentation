@@ -112,7 +112,7 @@ class Trainer():
                     self.writer.add_scalar(met_name, self.train_metrics.avg(met_name))
                 self.writer.add_scalar('loss', self.train_metrics.avg('loss'))
                 self.writer.add_scalar("lr", current_lr)
-                self.writer.add_image('input', make_grid(data.cpu(), nrow=8, normalize=True))
+                # self.writer.add_image('input', make_grid(data.cpu(), nrow=8, normalize=True))
             assert batch_idx <= self.len_epoch
         log = self.train_metrics.result()
         if self.do_validation:
@@ -137,7 +137,7 @@ class Trainer():
                 loss = self.criterion(output, target)
                 self.writer.set_step((epoch - 1) * len(self.valid_loader) + batch_idx, 'valid')
                 self.valid_metrics.update('loss', loss.item())
-                self.writer.add_image('input', make_grid(data.cpu(), nrow=8, normalize=True))
+                # self.writer.add_image('input', make_grid(data.cpu(), nrow=8, normalize=True))
                 target = target.cpu().numpy()
                 output = output[:, 0]
                 output = output.data.cpu().numpy()
