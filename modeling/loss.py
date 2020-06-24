@@ -44,21 +44,21 @@ class DiceLoss(nn.Module):
         loss = 1 - torch.mean(loss)
         return loss
 
-def dice_loss(y_pred, y_true):
-    y_pred = y_pred[:, 0]
-    assert y_pred.size() == y_true.size()
-    criterion = DiceLoss()
-    criterion = criterion.cuda()
-    loss = criterion(y_pred, y_true)
-    return loss
+# def dice_loss(y_pred, y_true):
+#     y_pred = y_pred[:, 0]
+#     assert y_pred.size() == y_true.size()
+#     criterion = DiceLoss()
+#     criterion = criterion.cuda()
+#     loss = criterion(y_pred, y_true)
+#     return loss
 
 
-# def dice_loss(input, target):
-#     smooth = 1.
-#
-#     iflat = input.view(-1)
-#     tflat = target.view(-1)
-#     intersection = (iflat * tflat).sum()
-#
-#     return 1 - ((2. * intersection + smooth) /
-#                 (iflat.sum() + tflat.sum() + smooth))
+def dice_loss(input, target):
+    smooth = 1.
+
+    iflat = input.view(-1)
+    tflat = target.view(-1)
+    intersection = (iflat * tflat).sum()
+
+    return 1 - ((2. * intersection + smooth) /
+                (iflat.sum() + tflat.sum() + smooth))
