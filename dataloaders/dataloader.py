@@ -32,7 +32,6 @@ class MRIBrainSegmentation(data.Dataset):
         img_link = self.images[index]
 
         label_link = self.labels[index]
-        print(img_link, label_link)
         _img = Image.open(img_link).convert('RGB')
         # img_width, img_height = _img.size
         # _img = add_margin(_img, self.input_size - img_width, self.input_size - img_height, (0, 255, 0))
@@ -78,7 +77,7 @@ if __name__ == "__main__":
     dataloader = DataLoader(dataset, batch_size=1, shuffle=True, num_workers=1)
 
     for index, sample in enumerate(dataloader):
-        print(sample['image'].size())
+
         for i in range(sample['image'].size()[0]):
             img = sample['image'].numpy()[i].transpose([1, 2, 0])
             mask = sample['mask'].numpy()[i]
