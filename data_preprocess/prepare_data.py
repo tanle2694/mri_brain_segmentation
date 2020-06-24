@@ -23,7 +23,6 @@ for sub_folder in os.listdir(root_folder):
         data_links[sub_folder].append(os.path.join(sub_folder, image_name))
 
 
-
 data_links_train = {}
 data_links_val = {}
 
