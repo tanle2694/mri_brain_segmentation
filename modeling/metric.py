@@ -32,3 +32,11 @@ class IoU(object):
         self.confusion_matrix = np.zeros((self.num_class,) * 2)
 
 
+def dice_coeff(predict, target, threshold=0.5):
+    N = target.size()
+    predict[predict >= threshold] = 1
+    predict[predict < threshold] = 0
+
+    predict_flat = predict.reshape()
+
+

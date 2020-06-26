@@ -11,6 +11,7 @@ import torch.nn as nn
 from logger.logger import get_logger
 from dataloaders.dataloader import MRIBrainSegmentation
 from modeling.deeplab import DeepLab
+from modeling.unet import Unet
 from utils.configure_parse import ConfigParser
 import modeling.loss as loss
 from trainer.trainer import Trainer
@@ -31,20 +32,24 @@ def main(args):
     cfg = config.config
     logger = get_logger(config.log_dir, "train")
 
-    train_dataset = MRIBrainSegmentation(root_folder=cfg['root_folder'], image_label=cfg['train_data'], is_train=True)
-    vali_dataset = MRIBrainSegmentation(root_folder=cfg['root_folder'], image_label=cfg['validation_data'], is_train=False)
+    train_dataset = MRIBrainSegmentation(root_folder=cfg['root_folder'], image_label=cfg['train_data'], is_train=True,
+                                         ignore_label=0, input_size=cfg['input_size'])
+    vali_dataset = MRIBrainSegmentation(root_folder=cfg['root_folder'], image_label=cfg['validation_data'], is_train=False,
+                                        ignore_label=0, input_size=cfg['input_size'])
 
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=cfg["train_batch_size"], shuffle=True,
                                                num_workers=cfg["workers"], drop_last=True)
 
     vali_loader = torch.utils.data.DataLoader(vali_dataset, batch_size=cfg["vali_batch_size"], shuffle=False,
                                               num_workers=cfg["workers"], drop_last=False)
-
-    model = DeepLab(num_classes=1,
-                    backbone=cfg['backbone'],
-                    output_stride=cfg['output_stride'],
-                    sync_bn=cfg['sync_bn'],
-                    freeze_bn=cfg['freeze_bn'])
+    if cfg['net_name'] == "deeplab":
+        model = DeepLab(num_classes=1,
+                        backbone=cfg['backbone'],
+                        output_stride=cfg['output_stride'],
+                        sync_bn=cfg['sync_bn'],
+                        freeze_bn=cfg['freeze_bn'])
+    else:
+        model = Unet(in_channels=3, out_channels=1, init_features=32)
 
     criterion = getattr(loss, 'dice_loss')
     optimizer = optim.SGD(model.parameters(), lr=cfg["lr"], momentum=0.9, weight_decay=cfg["weight_decay"])
@@ -58,9 +63,10 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--train_data", default="/home/tanlm/Downloads/lgg-mri-segmentation/train.txt")
-    parser.add_argument("--validation_data", default="/home/tanlm/Downloads/lgg-mri-segmentation/vali.txt")
-    parser.add_argument("--root_folder", default="/home/tanlm/Downloads/lgg-mri-segmentation/kaggle_3m")
+    parser.add_argument("--train_data", default="/root/data/train.txt")
+    parser.add_argument("--validation_data", default="/root/data/vali.txt")
+    parser.add_argument("--root_folder", default="/root/data/kaggle_3m")
+    parser.add_argument("--net_name", type=str, default="unet", choices=["deeplab", "unet"])
     parser.add_argument('--backbone', type=str, default='resnet',
                         choices=['resnet', 'xception', 'drn', 'mobilenet'],
                         help='backbone name (default: resnet)')
@@ -79,9 +85,9 @@ if __name__ == "__main__":
     parser.add_argument("--lr", default=0.007)
     parser.add_argument("--weight_decay", default=4e-5)
     parser.add_argument("--max_iters", default=10000)
-    parser.add_argument("--epoch", default=50)
+    parser.add_argument("--epoch", default=100)
     parser.add_argument("--resume", default="")
-    parser.add_argument("--trainer_save_dir", default="/home/tanlm/Downloads/lgg-mri-segmentation/save_dir")
+    parser.add_argument("--trainer_save_dir", default="/root/data/save_dir")
     parser.add_argument("--exper_name", default="exp1")
     args = parser.parse_args()
     main(args)
