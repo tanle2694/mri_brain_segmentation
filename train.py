@@ -66,7 +66,7 @@ if __name__ == "__main__":
     parser.add_argument("--train_data", default="/root/data/train.txt")
     parser.add_argument("--validation_data", default="/root/data/vali.txt")
     parser.add_argument("--root_folder", default="/root/data/kaggle_3m")
-    parser.add_argument("--net_name", type=str, default="unet", choices=["deeplab", "unet"])
+    parser.add_argument("--net_name", type=str, default="deeplab", choices=["deeplab", "unet"])
     parser.add_argument('--backbone', type=str, default='resnet',
                         choices=['resnet', 'xception', 'drn', 'mobilenet'],
                         help='backbone name (default: resnet)')

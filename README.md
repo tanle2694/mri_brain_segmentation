@@ -33,61 +33,54 @@ python data_preprocess/split_data.py --root_dir xxx --output_link yyy
 ```
 
 - `root_dir`: directory include all image original and label after extract data from zip file
-- `output_link`: link to directory to save file `train.txt, validation.txt, test.txt` 
+- `output_link`: link to directory to save file `train.txt, vali.txt, test.txt` 
 
 Output folder will have structures like below:
 ![](images/data_structure.png)
 
-## Running the tests
+Files train.txt, vali.txt, test.txt include lines. Each lines compose sub-links to file image origin and image label with tab separate
 
-Explain how to run the automated tests for this system
-
-### Break down into end to end tests
-
-Explain what these tests test and why
-
+Example
 ```
-Give an example
+TCGA_CS_4941_19960909/TCGA_CS_4941_19960909_1.tif   TCGA_CS_4941_19960909/TCGA_CS_4941_19960909_1_mask.tif
+TCGA_CS_4941_19960909/TCGA_CS_4941_19960909_2.tif   TCGA_CS_4941_19960909/TCGA_CS_4941_19960909_2.tif
 ```
+## Running the training and inference 
 
-### And coding style tests
-
-Explain what these tests test and why
-
+To training run `python train.py --`
 ```
-Give an example
+python train.py --root_folder /root/data/kaggle_3m \
+                --train_data /root/data/train.txt \
+                --validation_data /root/data/vali.txt \
+                --trainer_save_dir /root/data/save_dir
 ```
+- **root_folder**: folder include image origin and image label
+- **train_data**: file include link to train data
+- **validation_data**: file include link to validation data
+- **trainer_save_dir**: Folder where results(log, checkpoint, tensorboard) will be saved.
 
-## Deployment
+## Results:
 
-Add additional notes about how to deploy this on a live system
+I got 0.815 IoU with Deeplab v3+ resnet 101 and 0.796 with Unet.
 
-## Built With
+Some inference image segment by deeplab: 
 
-* [Dropwizard](http://www.dropwizard.io/1.0.2/docs/) - The web framework used
-* [Maven](https://maven.apache.org/) - Dependency Management
-* [ROME](https://rometools.github.io/rome/) - Used to generate RSS Feeds
+| ![](images/sample1.png) |![](images/sample2.png) | ![](images/sample3.png) | ![](images/sample4.png) |
+:-------------------------:|:-------------------------:|:-------------------------:|:-------------------------:
+| ![](images/sample5.png) |![](images/sample6.png) | ![](images/sample7.png) | ![](images/sample8.png) |
+| ![](images/sample9.png) |![](images/sample10.png) | ![](images/sample11.png) | ![](images/sample12.png) |
+| ![](images/sample13.png) |![](images/sample14.png) |  | |
+
+
 
 ## Contributing
 
-Please read [CONTRIBUTING.md](https://gist.github.com/PurpleBooth/b24679402957c63ec426) for details on our code of conduct, and the process for submitting pull requests to us.
-
-## Versioning
-
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/your/project/tags). 
-
 ## Authors
 
-* **Billie Thompson** - *Initial work* - [PurpleBooth](https://github.com/PurpleBooth)
-
-See also the list of [contributors](https://github.com/your/project/contributors) who participated in this project.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
+This project is licensed under the MIT License
 
 ## Acknowledgments
 
-* Hat tip to anyone whose code was used
-* Inspiration
-* etc
