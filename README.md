@@ -71,7 +71,11 @@ Some inference image segment by deeplab:
 | ![](images/sample9.png) |![](images/sample10.png) | ![](images/sample11.png) | ![](images/sample12.png) |
 | ![](images/sample13.png) |![](images/sample14.png) |  | |
 
+Replace data with other binary dataset(lung segmentation):
 
+| ![](images/lung_sample1.png) |![](images/lung_sample2.png) | ![](images/lung_sample3.png) | ![](images/lung_sample4.png) |
+:-------------------------:|:-------------------------:|:-------------------------:|:-------------------------:
+| ![](images/lung_sample5.png) |![](images/lung_sample6.png) | ![](images/lung_sample7.png) | ![](images/lung_sample8.png) |
 
 ## Contributing
 
